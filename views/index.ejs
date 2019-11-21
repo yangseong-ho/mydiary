@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>
+        <%= title %>
+    </title>
+    <script src="https://code.jquery.com/jquery-3.4.1.js" integrity="sha256-WpOohJOqMqqyKL9FccASB9O0KwACQJpFTUBLTYOVvVU=" crossorigin="anonymous"></script>
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+    <script>
+        $(function() {
+            makeCalendar();
+            $('.diary').hide();
+
+            function dateFormat(str) {
+                var year = str.substring(0, 4) + '년';
+                var month = str.substring(4, 6) + '월';
+                var day = str.substring(6, 8) + '일';
+                var time = str.substring(8, 10) + ':' + str.substring(10, 12) + ':' + str.substring(12, 14);
+                return year + ' ' + month + ' ' + day + ' ' + time;
+            }
+            recentUpdate();
+
+            function recentUpdate() {
+                $('.recent_body').empty();
+                var html = '';
+                <%for (var i in recentDiary) {%>
+                recentDate = <%=recentDiary[i].date.substring(0, 4)%> + '년 ' + <%=recentDiary[i].date.substring(4, 6)%> + '월 ' + <%=recentDiary[i].date.substring(6, 8)%> + '일';
+                html += `<span>${recentDate}</span>`;
+                <%}%>
+                $('.recent_body').append(html);
+            }
+
+            function makeCalendar() {
+
+                $('.days').empty();
+
+                var week = ['일', '월', '화', '수', '목', '금', '토'];
+
+                getYear = $('#year').val();
+
+                getMonth = $('#month').val();
+
+                lastDay = Number((new Date(getYear, getMonth, 0)).getDate());
+
+                getWeekDay = week[new Date(getYear + '-' +
+                    getMonth + '-1').getDay()];
+
+                var html = `<tr>`;
+                for (var i in week) {
+                    if (week[i] == getWeekDay) {
+                        for (j = 0; j < i; j++) {
+                            html += '<td style="cursor: default;"></td>';
+
+                        }
+                    }
+                }
+                for (i = 1; i <= lastDay; i++) {
+                    if (week[new Date(getYear + '-' +
+                            getMonth + '-' + i).getDay()] == '일' && lastDay != i) {
+                        html += '</tr><tr>';
+                    }
+                    html += `<td>${i}</td>`;
+                }
+                html += '</tr>';
+                $('.days').append(html);
+            };
+
+            $('#year').on('change', function(e) {
+                year = Number($(this).val());
+
+                if (year < 1900) {
+
+                    $(this).val(1900);
+                    alert('1900년도 부터 2100년도 까지만 입력이 가능합니다');
+
+                } else if (year > 2100) {
+
+                    $(this).val(2100);
+                    alert('1900년도 부터 2100년도 까지만 입력이 가능합니다');
+
+                }
+                makeCalendar();
+            });
+            $('#month').on('change', function(e) {
+
+                month = Number($(this).val());
+
+                if (month < 1) {
+
+                    $(this).val(1);
+                    alert('다시 입력해주세요.');
+
+                } else if (month > 12) {
+
+                    $(this).val(12);
+                    alert('다시 입력해주세요.');
+
+                }
+
+                makeCalendar();
+
+            });
+            $('.prev').on('click', function(e) {
+
+                input_id = $(this).next().attr('id');
+                num = Number($(this).next().val());
+
+                if (input_id == 'month') {
+                    if (num <= 1) return alert('잘못된 입력');
+                } else if (input_id == 'year') {
+                    if (num <= 1900) return alert('잘못된 입력');
+                }
+
+                $(this).next().val(num - 1);
+                makeCalendar();
+
+            });
+
+            $('.next').on('click', function(e) {
+
+                input_id = $(this).prev().attr('id');
+                num = Number($(this).prev().val());
+
+                if (input_id == 'month') {
+                    if (num >= 12) return alert('잘못된 입력');
+                } else if (input_id == 'year') {
+                    if (num >= 2100) return alert('잘못된 입력')
+                }
+
+                $(this).prev().val(num + 1);
+                makeCalendar();
+            });
+            $(document).on('click', '.days tr td', diaryView);
+
+            function diaryView(e) {
+
+                prevActive = $('.active');
+                prevActive.removeClass('active');
+                $(this).addClass('active');
+                year = $('#year').val();
+                month = Number($('#month').val());
+                if (month < 10) {
+                    month = '0' + String(month);
+                }
+                day = Number($(this).text());
+                if (day < 10) {
+                    day = '0' + String(day);
+                }
+                selectDate = year + String(month) + String(day);
+                // console.log(selectDate);
+                $('input[name=selectDate]').val(selectDate);
+                $('#monthVal').text(month);
+                $('#dayVal').text(day);
+                $.ajax({
+                    url: '/diary_view',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        'date': selectDate
+                    }
+                }).done(function(json) {
+
+                    $('#diaryTitle').val(json.title);
+                    $('#diaryContent').val(json.content);
+                    $('#first').text(dateFormat(json.created_at));
+                    $('#last').text(dateFormat(json.updated_at));
+
+                }).fail(function(xhr, status, err) {
+                    alert(err)
+                });
+
+                $('.diary').fadeIn();
+            }
+            $(document).on('change', '.diaryMain input, .diaryMain textarea', saveDiary)
+
+            function saveDiary(e) {
+                date = $('input[name=selectDate]').val();
+                title = $('input[name=diaryTitle]').val();
+                content = $('textarea[name=diaryContent]').val();
+                $.ajax({
+                    url: '/diary',
+                    type: 'POST',
+                    dataType: 'json',
+                    data: {
+                        'date': date,
+                        'title': title,
+                        'content': content
+                    },
+                    success: function(result) {
+                        if (result.result == 'success') {
+                            $('#first').text(dateFormat(result.created_at));
+                            $('#last').text(dateFormat(result.updated_at));
+
+                            alert("저장 완료");
+                        } else if (reuslt.result == 'fail') {
+                            alert("실패");
+                        } else {
+                            alert('오류가 발생했습니다.\n ' + '잠시 후 이용해 주시기 바랍니다.');
+                        }
+                    },
+                    error: function(xhr, status, err) {
+                        alert(err);
+                    }
+                });
+            }
+        });
+
+        function onlyNumber(event, _this) {
+            event = event || window.event;
+            var keyID = (event.which) ? event.which : event.keyCode;
+            if ((keyID >= 48 && keyID <= 57) || (keyID >= 96 && keyID <= 105) || keyID == 8 || keyID == 46 || keyID == 37 || keyID == 39)
+                return;
+            else
+                return false;
+        }
+    </script>
+</head>
+
+<body>
+    <h1>
+        <%= title %>(1900~2100)
+    </h1>
+    <div class="month">
+        <div class="recent">
+            <span>최근 업데이트</span>
+            <div class="recent_body">
+            </div>
+        </div>
+        <ul>
+            <li>
+                <p class="input-box">
+                    <span class="prev">&#10094;</span>
+                    <input type="number" id="year" min="1990" max="2020" value="2019" required onkeydown="return onlyNumber(event,this)">
+                    <span class="next">&#10095;</span>
+                    <label for="year" style="color:black">년</label>
+                    <span class="help-text"></span>
+                </p>
+                <p class="input-box">
+                    <span class="prev">&#10094;</span>
+                    <input type="number" id="month" min="1" max="12" value="11" required onkeydown="return onlyNumber(event,this)">
+                    <span class="next">&#10095;</span>
+                    <label for="month" style="color:black">월</label>
+                </p>
+            </li>
+        </ul>
+    </div>
+    <table class="calendar">
+        <thead>
+            <tr class="weekdays">
+                <th>Sun</th>
+                <th>Mon</th>
+                <th>Tue</th>
+                <th>Wed</th>
+                <th>Thu</th>
+                <th>Fri</th>
+                <th>Sat</th>
+            </tr>
+        </thead>
+        <tbody class="days">
+        </tbody>
+    </table>
+    <table class="diary">
+        <tbody>
+            <tr>
+                <td>
+                    <div class="diaryHead">
+                        <input type="hidden" name="selectDate" value="">
+                        <strong><span id="monthVal"></span>월<span id="dayVal"></span>일</strong>
+
+                        <div class="diaryInfo">
+                            <br>
+                            <span>최초 작성시간 :
+                                <span id="first"></span>
+                            </span>
+                            <span>마지막 업데이트 :
+                                <span id="last"></span>
+                            </span>
+                            <br>
+                        </div>
+                    </div>
+                    <div class="diaryMain">
+                        <span>Title</span>
+                        <input type="text" id="diaryTitle" name="diaryTitle">
+                        <span>Content</span>
+                        <textarea id="diaryContent" name="diaryContent"></textarea>
+                    </div>
+                </td>
+            </tr>
+        </tbody>
+    </table>
+
+</body>
+
+</html>

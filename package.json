@@ -1,0 +1,19 @@
+{
+    "name": "mydiary",
+    "version": "0.0.0",
+    "private": true,
+    "scripts": {
+        "start": "node server.js"
+    },
+    "dependencies": {
+        "body-parser": "^1.19.0",
+        "core-js": "^3.3.5",
+        "date-utils": "^1.2.21",
+        "debug": "~2.6.9",
+        "ejs": "~2.6.1",
+        "express": "~4.16.1",
+        "mybatis-mapper": "^0.6.3",
+        "mysql": "^2.17.1",
+        "sync-mysql": "^3.0.1"
+    }
+}

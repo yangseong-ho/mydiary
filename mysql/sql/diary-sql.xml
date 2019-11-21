@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+        <!-- select a.*, b.seq as comment_seq, b.author as comment_author, b.content as comment_content, b.created_at as comment_created_at, b.updated_at as comment_updated_at
+        from diary a
+        left join (
+            select *
+            from comments
+        ) b
+            on a.seq = b.diary_seq
+        where a.seq = ${seq}
+            and a.delete_yn = 'N' -->
+
+<mapper namespace="diary">
+    <select id="recentDiary">
+        select * from diary order by updated_at DESC
+        limit 5;
+    </select>
+    <select id="selectDiary">
+        select * from diary where date = #{date} 
+        
+    </select>
+    <insert id="insertDiary">
+        insert into diary(date, title, content, created_at, updated_at) values(#{date}, #{title}, #{content}, #{created_at}, #{updated_at})
+    </insert>
+    <update id="updateDiary">
+        update diary
+        set title = #{title}, content = #{content}, updated_at = #{updated_at}
+        where date = #{date}
+    </update>
+
+</mapper>
